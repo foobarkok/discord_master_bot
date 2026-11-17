@@ -1,5 +1,9 @@
+import logging
+
 import discord
 from discord.ext import commands
+
+logger = logging.getLogger(__name__)
 
 
 def create_bot():
@@ -9,7 +13,8 @@ def create_bot():
 
     @bot.event
     async def on_ready():
-        print(f"reisyou: We have logged in as {bot.user}")
+        # await bot.tree.sync()
+        logger.info(f"We have logged in as {bot.user}")
 
     @bot.event
     async def on_message(message: discord.Message):

@@ -9,8 +9,33 @@ except ModuleNotFoundError:
 import asyncio
 import importlib
 import logging
+from collections import deque
 from os import environ
 from pathlib import Path
+
+
+class MemoryHandler(logging.Handler):
+    def __init__(self, capacity: int):
+        super().__init__()
+        self.records = deque(maxlen=capacity)
+
+    def emit(self, record: logging.LogRecord):
+        self.records.append(record)
+
+
+memory_handler = MemoryHandler(capacity=10000)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.StreamHandler(),
+        memory_handler,
+        logging.FileHandler("app.log", encoding="utf-8"),
+    ],
+)
+logging.getLogger("discord").setLevel(logging.WARNING)
+
 
 from bot_manager import ChildBotsManager
 
@@ -35,6 +60,11 @@ async def on_ready():
 @master_bot.event
 async def on_err_occurred(e: str):
     logger.error(e)
+
+
+@master_bot.tree.command(name="log", description="logを出力")
+async def output_log(interaction: discord.Interaction):
+    pass
 
 
 @master_bot.event
