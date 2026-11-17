@@ -11,6 +11,7 @@ import importlib
 import io
 import logging
 from collections import deque
+from functools import wraps
 from os import environ
 from pathlib import Path
 
@@ -54,6 +55,30 @@ master_bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intent
 
 bm: ChildBotsManager
 
+ADMIN_IDS = {int(id) for id in environ["ADMIN_IDS"].split(",") if id.strip()}
+
+
+def check_admin():
+    def dec(coroutine):
+        @wraps(coroutine)
+        async def _wrapper(
+            interaction: discord.Interaction,
+            *args,
+            **kwargs,
+        ) -> None:
+            if interaction.user.id not in ADMIN_IDS:
+                await interaction.response.send_message(
+                    "このコマンドはこのBotの管理者のみが使用できます",
+                    ephemeral=True,
+                )
+                return
+
+            await coroutine(interaction, *args, **kwargs)
+
+        return _wrapper
+
+    return dec
+
 
 @master_bot.event
 async def on_ready():
@@ -67,6 +92,7 @@ async def on_err_occurred(e: str):
 
 
 @master_bot.tree.command(name="log", description="logを出力")
+@check_admin()
 async def output_log(interaction: discord.Interaction):
     file = discord.File(
         io.BytesIO(my_handler.log_str.encode("utf-8")), filename="app.log"
@@ -93,6 +119,7 @@ async def get_info(interaction: discord.Interaction):
 
 
 @master_bot.tree.command(name="stop", description="stop a child-bot")
+@check_admin()
 async def stop_bot(interaction: discord.Interaction, name: str):
     tmp = await bm.stop_child(name)
     if not tmp:
@@ -101,6 +128,7 @@ async def stop_bot(interaction: discord.Interaction, name: str):
 
 
 @master_bot.tree.command(name="start", description="start a child-bot")
+@check_admin()
 async def start_bot(interaction: discord.Interaction, name: str):
     tmp = await bm.start_child(name)
     if not tmp:
@@ -109,6 +137,7 @@ async def start_bot(interaction: discord.Interaction, name: str):
 
 
 @master_bot.tree.command(name="reboot", description="stop and restart a child-bot")
+@check_admin()
 async def reboot_bot(interaction: discord.Interaction, name: str):
     tmp = await bm.reboot_child(name)
     if not tmp:
