@@ -8,33 +8,37 @@ except ModuleNotFoundError:
 
 import asyncio
 import importlib
+import io
 import logging
 from collections import deque
 from os import environ
 from pathlib import Path
 
 
-class MemoryHandler(logging.Handler):
+class MyHandler(logging.Handler):
     def __init__(self, capacity: int):
         super().__init__()
         self.records = deque(maxlen=capacity)
+        self.log_str = ""
 
     def emit(self, record: logging.LogRecord):
         self.records.append(record)
+        formatted = self.format(record)
+        self.log_str += formatted + "\n"
+        if record.levelno >= logging.WARNING or not record.name.startswith("discord"):
+            print(formatted)
 
 
-memory_handler = MemoryHandler(capacity=10000)
+my_handler = MyHandler(capacity=10000)
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
     handlers=[
-        logging.StreamHandler(),
-        memory_handler,
+        my_handler,
         logging.FileHandler("app.log", encoding="utf-8"),
     ],
 )
-logging.getLogger("discord").setLevel(logging.WARNING)
 
 
 from bot_manager import ChildBotsManager
@@ -64,7 +68,10 @@ async def on_err_occurred(e: str):
 
 @master_bot.tree.command(name="log", description="logを出力")
 async def output_log(interaction: discord.Interaction):
-    pass
+    file = discord.File(
+        io.BytesIO(my_handler.log_str.encode("utf-8")), filename="app.log"
+    )
+    await interaction.response.send_message("logを送信しました", file=file)
 
 
 @master_bot.event
