@@ -40,9 +40,9 @@ async def on_err_occurred(e: str):
 @master_bot.event
 async def on_child_bot_crashed(name: str, tb: str):
     logger.error(f"Bot {name} crashed.")
-    logger.error("TraceBack:==========")
+    logger.error("======TraceBack======")
     logger.error(tb.rstrip())
-    logger.error("====================")
+    logger.error("=====================")
 
 
 @master_bot.tree.command(name="hello", description="Hello!")
