@@ -19,6 +19,7 @@ def create_bot():
     @bot.event
     async def on_message(message: discord.Message):
         if "うお" in message.content:
+            await message.add_reaction("\N{REVERSED HAND WITH MIDDLE FINGER EXTENDED}")
             await message.reply("冷笑を検出しました！")
 
     return bot
