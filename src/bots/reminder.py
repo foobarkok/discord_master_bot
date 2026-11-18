@@ -272,7 +272,7 @@ class ReminderBot(commands.Bot):
     # Reminder scheduler
     # ========================================================
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(seconds=20)
     async def reminder_loop(self) -> None:
 
         # Retrieve due reminders.
@@ -511,7 +511,7 @@ def create_bot() -> ReminderBot:
         if value["kind"] == "mention":
             details.append(f"メンション先: <@{value['user_id']}>")
 
-        details.append(f"メッセージ:\n{message_preview}")
+        details.append(f"メッセージ: {message_preview}")
 
         if value["kind"] == "mention":
             details.append("※確認返信ではメンション通知は送信されません。")
