@@ -512,7 +512,9 @@ def create_bot() -> ReminderBot:
             details.append(f"メンション先: <@{value['user_id']}>")
 
         details.append(f"メッセージ:\n{message_preview}")
-        details.append("※確認返信ではメンション通知は送信されません。")
+
+        if value["kind"] == "mention":
+            details.append("※確認返信ではメンション通知は送信されません。")
 
         await interaction.edit_original_response(
             content="リマインドを予約しました。\n" + "\n".join(details),
