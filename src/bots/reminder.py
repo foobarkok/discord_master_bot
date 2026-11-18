@@ -1,3 +1,5 @@
+# このファイルはほぼ全部AIで記述されており、人間の確認は入っていないことに注意
+
 from __future__ import annotations
 
 import calendar
