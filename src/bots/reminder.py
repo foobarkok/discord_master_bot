@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import calendar
 import logging
 import os
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -38,6 +40,19 @@ token_name = "REMINDER_BOT_TOKEN"
 
 # Maximum character length for message preview in confirmation replies.
 MESSAGE_PREVIEW_MAX_LENGTH = 40
+
+# Pattern for Japanese relative time expressions:
+# [N年][N(ヶ)月][N日][N時(間)][N分][N秒]後
+RELATIVE_JA_TIME_PATTERN = re.compile(
+    r"^"
+    r"(?:(?P<years>\d+)年\s*)?"
+    r"(?:(?P<months>\d+)(?:ヶ|か|ヵ|ケ)?月\s*)?"
+    r"(?:(?P<days>\d+)日\s*)?"
+    r"(?:(?P<hours>\d+)時(?:間)?\s*)?"
+    r"(?:(?P<minutes>\d+)分\s*)?"
+    r"(?:(?P<seconds>\d+)秒\s*)?"
+    r"後$"
+)
 
 
 # ============================================================
@@ -113,6 +128,48 @@ def create_database_engine():
     )
 
 
+def parse_relative_ja_time(value: str, base: datetime) -> datetime | None:
+    """
+    Parse Japanese relative time expressions such as:
+    '[N年][N(ヶ)月][N日][N時(間)][N分][N秒]後'
+    """
+
+    match = RELATIVE_JA_TIME_PATTERN.fullmatch(value)
+    if match is None:
+        return None
+
+    groups = match.groupdict()
+    if all(v is None for v in groups.values()):
+        return None
+
+    years = int(groups["years"] or 0)
+    months = int(groups["months"] or 0)
+    days = int(groups["days"] or 0)
+    hours = int(groups["hours"] or 0)
+    minutes = int(groups["minutes"] or 0)
+    seconds = int(groups["seconds"] or 0)
+
+    # Add years and months with end-of-month clamping.
+    total_months = (base.year * 12 + (base.month - 1)) + years * 12 + months
+    target_year, target_month_zero = divmod(total_months, 12)
+    target_month = target_month_zero + 1
+    max_day = calendar.monthrange(target_year, target_month)[1]
+    target_day = min(base.day, max_day)
+
+    result = base.replace(
+        year=target_year,
+        month=target_month,
+        day=target_day,
+    )
+
+    return result + timedelta(
+        days=days,
+        hours=hours,
+        minutes=minutes,
+        seconds=seconds,
+    )
+
+
 def parse_remind_time(value: str) -> datetime:
     """
     Parse a wide variety of date/time formats.
@@ -121,28 +178,34 @@ def parse_remind_time(value: str) -> datetime:
     Timezone-aware datetimes are converted to JST.
     """
 
-    value = value.strip().replace("　", " ")
+    value = value.strip().replace(" ", " ")
 
     if not value:
         raise ValueError("Datetime is empty")
+
+    now = datetime.now(JST)
 
     # Try ISO 8601 first.
     try:
         result = datetime.fromisoformat(value)
 
     except ValueError:
-        # Fall back to dateparser.
-        result = dateparser.parse(
-            value,
-            languages=["ja", "en"],
-            settings={
-                "TIMEZONE": "Asia/Tokyo",
-                "TO_TIMEZONE": "Asia/Tokyo",
-                "RETURN_AS_TIMEZONE_AWARE": True,
-                "RELATIVE_BASE": datetime.now(JST),
-                "PREFER_DATES_FROM": "future",
-            },
-        )
+        # Try Japanese relative time format next.
+        result = parse_relative_ja_time(value, now)
+
+        if result is None:
+            # Fall back to dateparser.
+            result = dateparser.parse(
+                value,
+                languages=["ja", "en"],
+                settings={
+                    "TIMEZONE": "Asia/Tokyo",
+                    "TO_TIMEZONE": "Asia/Tokyo",
+                    "RETURN_AS_TIMEZONE_AWARE": True,
+                    "RELATIVE_BASE": now,
+                    "PREFER_DATES_FROM": "future",
+                },
+            )
 
     if result is None:
         raise ValueError(f"Could not parse datetime: {value!r}")
@@ -414,7 +477,8 @@ def create_bot() -> ReminderBot:
                     "- `2026/11/19 9:00`\n"
                     "- `2026年11月19日 9時`\n"
                     "- `Nov 19, 2026 9:00 AM`\n"
-                    "- `明日の午前9時`"
+                    "- `明日の午前9時`\n"
+                    "- `30分後` / `1時間30分後` / `1年2ヶ月3日後`"
                 )
             )
             return
