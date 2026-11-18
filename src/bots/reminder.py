@@ -36,6 +36,9 @@ JST = ZoneInfo("Asia/Tokyo")
 # External Bot manager uses this to obtain the Discord token.
 token_name = "REMINDER_BOT_TOKEN"
 
+# Maximum character length for message preview in confirmation replies.
+MESSAGE_PREVIEW_MAX_LENGTH = 40
+
 
 # ============================================================
 # Database
@@ -153,6 +156,14 @@ def parse_remind_time(value: str) -> datetime:
 
 def format_remind_time(value: datetime) -> str:
     return value.astimezone(JST).strftime("%Y-%m-%d %H:%M:%S JST")
+
+
+def truncate_text(text: str, max_length: int) -> str:
+    if len(text) <= max_length:
+        return text
+    if max_length <= 3:
+        return "." * max_length
+    return f"{text[: max_length - 3]}..."
 
 
 # ============================================================
@@ -375,13 +386,17 @@ def create_bot() -> ReminderBot:
         # Respond immediately so that the interaction
         # does not expire during database operations.
         await interaction.response.send_message(
-            "入力された日時は日本時間（JST）として解釈します。\n予約を処理しています。",
-            ephemeral=True,
+            "入力された日時は日本時間（JST）として解釈します。\n予約を処理しています。"
         )
 
         # Validate message length.
         if len(value["text"]) > max_message_length:
-            await interaction.edit_original_response(content="メッセージが長すぎます。")
+            await interaction.edit_original_response(
+                content=(
+                    f"メッセージが長すぎます"
+                    f"（入力文字数: {len(value['text'])}文字 / 上限: {max_message_length}文字）。"
+                )
+            )
             return
 
         # Parse datetime.
@@ -389,9 +404,11 @@ def create_bot() -> ReminderBot:
             remind_at = parse_remind_time(when)
 
         except ValueError:
+            when_preview = truncate_text(when, 200)
             await interaction.edit_original_response(
                 content=(
                     "日時を解釈できませんでした。\n"
+                    f"入力日時: {when_preview}\n"
                     "例:\n"
                     "- `2026-11-19 09:00`\n"
                     "- `2026/11/19 9:00`\n"
@@ -416,10 +433,24 @@ def create_bot() -> ReminderBot:
                 )
             )
 
+        # Build confirmation message including input arguments.
+        when_preview = truncate_text(when, 200)
+        message_preview = truncate_text(value["text"], MESSAGE_PREVIEW_MAX_LENGTH)
+
+        details = [
+            f"入力日時: {when_preview}",
+            f"実行時刻: {format_remind_time(remind_at)}",
+        ]
+
+        if value["kind"] == "mention":
+            details.append(f"メンション先: <@{value['user_id']}>")
+
+        details.append(f"メッセージ:\n{message_preview}")
+        details.append("※確認返信ではメンション通知は送信されません。")
+
         await interaction.edit_original_response(
-            content=(
-                f"リマインドを予約しました。\n実行時刻: {format_remind_time(remind_at)}"
-            )
+            content="リマインドを予約しました。\n" + "\n".join(details),
+            allowed_mentions=discord.AllowedMentions.none(),
         )
 
     # ========================================================
