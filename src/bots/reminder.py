@@ -81,7 +81,8 @@ class Reserved(Base):
         server_default=func.now(),
     )
 
-    date: Mapped[datetime] = mapped_column(
+    # PostgreSQL では DateTime(timezone=True) が TIMESTAMP WITH TIME ZONE になります
+    remind_datetime: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         index=True,
@@ -284,9 +285,9 @@ class ReminderBot(commands.Bot):
                         Reserved.id,
                         Reserved.value,
                     )
-                    .where(Reserved.date <= func.now())
+                    .where(Reserved.remind_datetime <= func.now())
                     .order_by(
-                        Reserved.date,
+                        Reserved.remind_datetime,
                         Reserved.id,
                     )
                 )
@@ -508,7 +509,7 @@ def create_bot() -> ReminderBot:
         async with bot.session_factory.begin() as session:
             session.add(
                 Reserved(
-                    date=remind_at,
+                    remind_datetime=remind_at,
                     value=value,
                 )
             )
