@@ -1,19 +1,23 @@
+import asyncio
+import importlib
+import io
+import logging
+import sys
+from collections import deque
+from functools import wraps
+from os import environ
+from pathlib import Path
+
 # fmt: off
 try:
     import dotenv
     dotenv.load_dotenv()
 except ModuleNotFoundError:
     pass
+if "--keep-alive" in sys.argv[1:]:
+    from keep_alive import start_health_check_server
+    start_health_check_server()
 # fmt: on
-
-import asyncio
-import importlib
-import io
-import logging
-from collections import deque
-from functools import wraps
-from os import environ
-from pathlib import Path
 
 
 class MyHandler(logging.Handler):

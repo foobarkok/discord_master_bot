@@ -81,7 +81,8 @@ class Reserved(Base):
         server_default=func.now(),
     )
 
-    date: Mapped[datetime] = mapped_column(
+    # PostgreSQL では DateTime(timezone=True) が TIMESTAMP WITH TIME ZONE になります
+    remind_datetime: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         index=True,
@@ -284,9 +285,9 @@ class ReminderBot(commands.Bot):
                         Reserved.id,
                         Reserved.value,
                     )
-                    .where(Reserved.date <= func.now())
+                    .where(Reserved.remind_datetime <= func.now())
                     .order_by(
-                        Reserved.date,
+                        Reserved.remind_datetime,
                         Reserved.id,
                     )
                 )
@@ -365,11 +366,16 @@ class ReminderBot(commands.Bot):
 
             elif kind == "mention":
                 user_id = int(value["user_id"])
+                reserved_by = int(value["reserved_by"])
+
+                mention_user_ids = {user_id, reserved_by}
+
+                content = f"<@{user_id}> {text}\n\nby <@{reserved_by}>"
 
                 await channel.send(
-                    content=f"<@{user_id}> {text}",
+                    content=content,
                     allowed_mentions=discord.AllowedMentions(
-                        users=[discord.Object(id=user_id)],
+                        users=[discord.Object(id=uid) for uid in mention_user_ids],
                         roles=False,
                         everyone=False,
                         replied_user=False,
@@ -508,7 +514,7 @@ def create_bot() -> ReminderBot:
         async with bot.session_factory.begin() as session:
             session.add(
                 Reserved(
-                    date=remind_at,
+                    remind_datetime=remind_at,
                     value=value,
                 )
             )
@@ -589,6 +595,7 @@ def create_bot() -> ReminderBot:
     ) -> None:
 
         mention_prefix = f"<@{user.id}> "
+        mention_suffix = f"\n<@{interaction.user.id}>"
 
         await reserve(
             interaction,
@@ -596,9 +603,10 @@ def create_bot() -> ReminderBot:
             {
                 "kind": "mention",
                 "user_id": user.id,
+                "reserved_by": interaction.user.id,
                 "text": message,
             },
-            max_message_length=(2000 - len(mention_prefix)),
+            max_message_length=(2000 - len(mention_prefix) - len(mention_suffix)),
         )
 
     return bot
