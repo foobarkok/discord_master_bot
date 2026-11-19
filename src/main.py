@@ -153,11 +153,14 @@ async def main():
 
     bm = ChildBotsManager(master_bot)
     bots_dir = Path(__file__).parent / "bots"
-    for file in bots_dir.glob("*.py"):
-        if file.stem == "__init__":
+    for item in bots_dir.iterdir():
+        if item.is_dir():
+            name = item.name
+        elif item.suffix == ".py":
+            name = item.stem
+        else:
             continue
 
-        name = file.stem
         module = importlib.import_module(f"bots.{name}")
         bm.register(name, module)
 
