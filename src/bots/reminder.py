@@ -366,11 +366,16 @@ class ReminderBot(commands.Bot):
 
             elif kind == "mention":
                 user_id = int(value["user_id"])
+                reserved_by = int(value["reserved_by"])
+
+                mention_user_ids = {user_id, reserved_by}
+
+                content = f"<@{user_id}> {text}\n\nby <@{reserved_by}>"
 
                 await channel.send(
-                    content=f"<@{user_id}> {text}",
+                    content=content,
                     allowed_mentions=discord.AllowedMentions(
-                        users=[discord.Object(id=user_id)],
+                        users=[discord.Object(id=uid) for uid in mention_user_ids],
                         roles=False,
                         everyone=False,
                         replied_user=False,
@@ -590,6 +595,7 @@ def create_bot() -> ReminderBot:
     ) -> None:
 
         mention_prefix = f"<@{user.id}> "
+        mention_suffix = f"\n<@{interaction.user.id}>"
 
         await reserve(
             interaction,
@@ -597,9 +603,10 @@ def create_bot() -> ReminderBot:
             {
                 "kind": "mention",
                 "user_id": user.id,
+                "reserved_by": interaction.user.id,
                 "text": message,
             },
-            max_message_length=(2000 - len(mention_prefix)),
+            max_message_length=(2000 - len(mention_prefix) - len(mention_suffix)),
         )
 
     return bot
