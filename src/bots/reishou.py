@@ -19,6 +19,9 @@ reishou_pattern = re.compile(
     # 「お」の判定はギリシャ文字オミクロンの全角の大文字と小文字表記を含む
     rf"({u_pattern}{space_pattern}{o_pattern}{space_pattern}( |{w_pattern}|$|{symbols}))|(お{space_pattern}う{space_pattern}{w_pattern})|({left_bracket}((reishou)|(reisyou)){right_bracket})|({left_bracket}{space_pattern}((冷{space_pattern}笑)|(れ{space_pattern}い{space_pattern}し{space_pattern}ょ{space_pattern}う)){space_pattern}{right_bracket})"
 )
+
+# 参考:
+# https://tech-blog.s-yoshiki.com/entry/303
 blank_symbols = {
     "\u0009",
     "\u000a",
