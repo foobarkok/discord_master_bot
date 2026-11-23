@@ -10,13 +10,14 @@ logger = logging.getLogger(__name__)
 
 left_bracket = r"(\(|（)"
 right_bracket = r"(\)|）)"
-symbols = r"\\|/|\.|\^|\$|\||\*|\+|\?|\{|\}|\[|\]|\-|\(|\)|\"|\'|[！”＃＄％＆’（）＝ー＾〜￥｜＠｀「｛；＋：＊」｝、＜。＞・？￥＿]←↓↑→"
+symbols = r"\\|/|\.|\^|\$|\||\*|\+|\?|\{|\}|\[|\]|\-|\(|\)|\"|\'|\!|[！”＃＄％＆’（）＝ー＾〜￥｜＠｀「｛；＋：＊」｝、＜。＞・？￥＿]←↓↑→"
 u_pattern = r"([うぅゥぅ゙ゥ゙ウuUｕＵ宇])"
 o_pattern = r"([おぉオォぉ゙ォ゙oOｏＯοΟ於于])"
 space_pattern = r"( |　)*"
+w_pattern = r"([wWｗＷωっッっ゙ッ゙])"
 reishou_pattern = re.compile(
     # 「お」の判定はギリシャ文字オミクロンの全角の大文字と小文字表記を含む
-    rf"({u_pattern}{space_pattern}{o_pattern}{space_pattern}( |[wWｗＷωっッっ゙ッ゙]|$|{symbols}))|(reishou)|(reisyou)|({left_bracket}{space_pattern}((冷{space_pattern}笑)|(れ{space_pattern}い{space_pattern}し{space_pattern}ょ{space_pattern}う)){space_pattern}{right_bracket})"
+    rf"({u_pattern}{space_pattern}{o_pattern}{space_pattern}( |{w_pattern}|$|{symbols}))|(お{space_pattern}う{space_pattern}{w_pattern})|(reishou)|(reisyou)|({left_bracket}{space_pattern}((冷{space_pattern}笑)|(れ{space_pattern}い{space_pattern}し{space_pattern}ょ{space_pattern}う)){space_pattern}{right_bracket})"
 )
 blank_symbols = {
     "\u0009",
