@@ -1,3 +1,5 @@
+# なんと、このファイルは一切AIを使わずに書かれています
+
 import logging
 import re
 
@@ -8,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 left_bracket = r"(\(|（)"
 right_bracket = r"(\)|）)"
-symbols = r"\\|/|\.|\^|\$|\||\*|\+|\?|\{|\}|\[|\]|\-|\(|\)|\"|\'|[！”＃＄％＆’（）＝ー＾〜￥｜＠｀「｛；＋：＊」｝、＜。＞・？￥＿]"
+symbols = r"\\|/|\.|\^|\$|\||\*|\+|\?|\{|\}|\[|\]|\-|\(|\)|\"|\'|[！”＃＄％＆’（）＝ー＾〜￥｜＠｀「｛；＋：＊」｝、＜。＞・？￥＿]←↓↑→"
 u_pattern = r"([うぅゥぅ゙ゥ゙ウuUｕＵ宇])"
 o_pattern = r"([おぉオォぉ゙ォ゙oOｏＯοΟ於于])"
 space_pattern = r"( |　)*"
 reishou_pattern = re.compile(
     # 「お」の判定はギリシャ文字オミクロンの全角の大文字と小文字表記を含む
-    rf"(( |^|{symbols}){space_pattern}{u_pattern}{space_pattern}{o_pattern}{space_pattern}( |w|$|{symbols}))|(reishou)|(reisyou)|({left_bracket}((冷笑)|(れいしょう)){right_bracket})"
+    rf"({u_pattern}{space_pattern}{o_pattern}{space_pattern}( |[wWｗＷωっッっ゙ッ゙]|$|{symbols}))|(reishou)|(reisyou)|({left_bracket}{space_pattern}((冷{space_pattern}笑)|(れ{space_pattern}い{space_pattern}し{space_pattern}ょ{space_pattern}う)){space_pattern}{right_bracket})"
 )
 blank_symbols = {
     "\u0009",
@@ -92,7 +94,7 @@ def create_bot():
     async def on_message(message: discord.Message):
         if reishou_pattern.search(remove_blanks(message.content)):
             await message.add_reaction("\N{REVERSED HAND WITH MIDDLE FINGER EXTENDED}")
-            await message.reply("冷笑を検出しました！")
+            await message.reply(":index_pointing_at_the_viewer:冷笑を検出しました！")
 
     return bot
 
