@@ -24,17 +24,18 @@ class MyHandler(logging.Handler):
     def __init__(self, capacity: int):
         super().__init__()
         self.records = deque(maxlen=capacity)
-        self.log_str = ""
 
     def emit(self, record: logging.LogRecord):
         self.records.append(record)
         formatted = self.format(record)
-        self.log_str += formatted + "\n"
         if record.levelno >= logging.WARNING or not record.name.startswith("discord"):
             print(formatted)
 
+    def get_str(self) -> str:
+        return "".join(self.format(record) for record in self.records)
 
-my_handler = MyHandler(capacity=10000)
+
+my_handler = MyHandler(capacity=4096)
 logging.basicConfig(
     level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -99,7 +100,7 @@ async def on_err_occurred(e: str):
 @check_admin()
 async def output_log(interaction: discord.Interaction):
     file = discord.File(
-        io.BytesIO(my_handler.log_str.encode("utf-8")), filename="app.log"
+        io.BytesIO(my_handler.get_str().encode("utf-8")), filename="app.log"
     )
     await interaction.response.send_message("logを送信しました", file=file)
 
