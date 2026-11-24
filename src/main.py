@@ -102,7 +102,9 @@ async def output_log(interaction: discord.Interaction):
     file = discord.File(
         io.BytesIO(my_handler.get_str().encode("utf-8")), filename="app.log"
     )
-    await interaction.response.send_message("logを送信しました", file=file)
+    await interaction.response.send_message(
+        "logを送信しました", file=file, ephemeral=True
+    )
 
 
 @master_bot.event
