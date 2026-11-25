@@ -1,5 +1,6 @@
 # なんと、このファイルは一切AIを使わずに書かれています
 
+import asyncio
 import logging
 import re
 
@@ -98,8 +99,10 @@ def create_bot():
     @bot.event
     async def on_message(message: discord.Message):
         if reishou_pattern.search(remove_blanks(message.content)):
-            await message.add_reaction("\N{REVERSED HAND WITH MIDDLE FINGER EXTENDED}")
-            await message.reply(":index_pointing_at_the_viewer:冷笑を検出しました！")
+            await asyncio.gather(
+                message.add_reaction("\N{REVERSED HAND WITH MIDDLE FINGER EXTENDED}"),
+                message.reply(":index_pointing_at_the_viewer:冷笑を検出しました！"),
+            )
 
     return bot
 
