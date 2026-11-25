@@ -87,8 +87,9 @@ def remove_blanks(s: str) -> str:
 
 
 def create_bot():
-    intents = discord.Intents.default()
+    intents = discord.Intents.none()
     intents.message_content = True
+    intents.guild_messages = True
     bot = commands.Bot(command_prefix=commands.when_mentioned, intents=intents)
 
     @bot.event
