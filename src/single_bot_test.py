@@ -1,11 +1,12 @@
 import importlib
 import sys
 from os import environ
-from pathlib import Path
 
 import dotenv
 
 dotenv.load_dotenv()
+
+module = None
 
 for name in sys.argv[1:]:
     try:
@@ -14,5 +15,8 @@ for name in sys.argv[1:]:
     except ModuleNotFoundError:
         print(f"module {name} does not exists.")
 
-bot = module.create_bot()
-bot.run(environ[module.token_name])
+if module is None:
+    print("Please enter the bot's name.")
+else:
+    bot = module.create_bot()
+    bot.run(environ[module.token_name])
